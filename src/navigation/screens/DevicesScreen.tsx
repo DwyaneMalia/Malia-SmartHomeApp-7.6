@@ -1,0 +1,229 @@
+import React from 'react';
+
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Switch,
+  Pressable,
+} from 'react-native';
+
+import { Ionicons } from '@expo/vector-icons';
+
+import { useIoT } from '../context/IoTContext';
+import { colors } from '../../theme';
+
+export default function DevicesScreen() {
+
+  const {
+    devices,
+    toggleDevice,
+    isProcessing,
+    isLoadingDevices,
+    deviceError,
+    gatewayDisconnected,
+    loadDevices,
+  } = useIoT();
+
+  return (
+    <ScrollView style={styles.container}>
+
+      <Text style={styles.title}>
+        Devices
+      </Text>
+
+      <Text style={styles.subtitle}>
+        Control your connected devices
+      </Text>
+
+      {isLoadingDevices && (
+        <Text style={styles.processingText}>
+          Loading devices...
+        </Text>
+      )}
+
+      {isProcessing && (
+        <Text style={styles.processingText}>
+          Updating device status...
+        </Text>
+      )}
+
+      {deviceError && (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{deviceError}</Text>
+          <Pressable
+            onPress={() => loadDevices()}
+            style={styles.retryButton}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {gatewayDisconnected && !deviceError && (
+        <Text style={styles.gatewayText}>IoT Gateway is disconnected.</Text>
+      )}
+
+      {devices.map((device) => (
+
+        <View
+          key={device.id}
+          style={styles.deviceCard}
+        >
+
+          <View style={styles.deviceInfo}>
+
+            <View style={styles.iconContainer}>
+
+              <Ionicons
+                name={device.icon}
+                size={28}
+              />
+
+            </View>
+
+            <View style={styles.deviceDetails}>
+
+              <Text style={styles.deviceName}>
+                {device.name}
+              </Text>
+
+              <Text style={styles.deviceType}>
+                {device.type}
+              </Text>
+
+              <Text style={styles.deviceState}>
+                {device.status ? 'ON' : 'OFF'}
+              </Text>
+
+            </View>
+
+          </View>
+
+          <Switch
+            value={device.status}
+            trackColor={{ false: colors.border, true: colors.textMuted }}
+            thumbColor={colors.textOnDark}
+            onValueChange={(value) => {
+              toggleDevice(device.id, value);
+            }}
+          />
+
+        </View>
+
+      ))}
+
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+
+  container: {
+    flex: 1,
+    padding: 20,
+    marginBottom: 20,
+    backgroundColor: colors.background,
+  },
+
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+
+  subtitle: {
+    fontSize: 14,
+    marginTop: 5,
+    marginBottom: 25,
+    color: colors.textMuted,
+  },
+
+  processingText: {
+    fontSize: 13,
+    color: colors.text,
+    fontWeight: '600',
+    marginBottom: 15,
+  },
+
+  errorBox: {
+    backgroundColor: colors.errorSurface,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 15,
+  },
+
+  errorText: {
+    color: colors.errorText,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+
+  gatewayText: {
+    color: colors.errorText,
+    fontWeight: '700',
+    marginBottom: 15,
+  },
+
+  retryButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.accent,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+
+  retryButtonText: {
+    color: colors.textOnDark,
+    fontWeight: '700',
+  },
+
+  deviceCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 18,
+    borderRadius: 15,
+    backgroundColor: colors.surface,
+    marginBottom: 15,
+  },
+
+  deviceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+
+  iconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+
+  deviceDetails: {
+    flex: 1,
+  },
+
+  deviceName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text,
+  },
+
+  deviceType: {
+    fontSize: 13,
+    marginTop: 3,
+    color: colors.textMuted,
+  },
+
+  deviceState: {
+    fontSize: 12,
+    marginTop: 5,
+    color: colors.text,
+  },
+
+});
