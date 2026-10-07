@@ -1,58 +1,34 @@
-import { initialDevices, type Device, type SensorData } from '../models/IoTModels';
+import type { Device, SensorData } from '../models/IoTModels';
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000/api';
 
-const devicesStore: Device[] = initialDevices.map((device) => ({ ...device }));
-
-const sensorStore: SensorData = {
-  temperature: 28,
-  humidity: 65,
-  lightLevel: 720,
-};
-
-const maybeFail = (message: string, failRate = 0.3) => {
-  if (Math.random() < failRate) {
-    const gatewayFailure = Math.random() < 0.5;
-    throw new Error(gatewayFailure ? 'IoT Gateway is disconnected.' : message);
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_URL}${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  const body = await response.json() as T | { error?: string };
+  if (!response.ok) {
+    throw new Error(
+      typeof body === 'object' && body !== null && 'error' in body && body.error
+        ? body.error
+        : 'The API request failed.',
+    );
   }
-};
-
-export async function getSensorData(): Promise<SensorData> {
-  await delay(1500);
-  maybeFail('Unable to retrieve sensor data.');
-
-  const nextData: SensorData = {
-    temperature: 24 + Math.floor(Math.random() * 8),
-    humidity: 50 + Math.floor(Math.random() * 25),
-    lightLevel: 600 + Math.floor(Math.random() * 450),
-  };
-
-  Object.assign(sensorStore, nextData);
-
-  return { ...sensorStore };
+  return body as T;
 }
 
-export async function getDevices(): Promise<Device[]> {
-  await delay(1000);
-  maybeFail('Unable to retrieve devices.');
-
-  return devicesStore.map((device) => ({ ...device }));
+export function getSensorData(): Promise<SensorData> {
+  return request<SensorData>('/sensors/latest');
 }
 
-export async function updateDeviceStatus(
-  id: number,
-  status: boolean,
-): Promise<Device> {
-  await delay(800);
-  maybeFail('Unable to update device status.');
+export function getDevices(): Promise<Device[]> {
+  return request<Device[]>('/devices');
+}
 
-  const device = devicesStore.find((item) => item.id === id);
-
-  if (!device) {
-    throw new Error(`Device ${id} was not found.`);
-  }
-
-  device.status = status;
-
-  return { ...device };
+export function updateDeviceStatus(id: number, status: boolean): Promise<Device> {
+  return request<Device>(`/devices/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
 }
